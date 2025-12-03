@@ -235,6 +235,8 @@ TelegramSessionManager/
 ⭐ Если проект полезен - поставьте звезду!
 
 </div>
-#   T e l e g r a m S e s s i o n M a n a g e r  
- #   T e l e g r a m S e s s i o n M a n a g e r  
+#   T e l e g r a m S e s s i o n M a n a g e r 
+ 
+ #   T e l e g r a m S e s s i o n M a n a g e r 
+ 
  

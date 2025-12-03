@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление сессиями Telegram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-around;
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .status-item {
+            text-align: center;
+        }
+        
+        .status-item .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .status-item .label {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .sessions-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .session-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .session-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .session-card.authorized {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .session-info {
+            flex: 1;
+        }
+        
+        .session-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1a202c;
+            margin-bottom: 5px;
+        }
+        
+        .session-details {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
+        .session-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .status-authorized {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-unauthorized {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .session-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+        
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: slideIn 0.3s;
+        }
+        
+        .notification.success {
+            background: #48bb78;
+        }
+        
+        .notification.error {
+            background: #f56565;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Управление сессиями Telegram</h1>
+            <p>Просмотр и подключение к активным сессиям Telegram Desktop</p>
+        </div>
+        
+        <div class="content">
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="value" id="totalSessions">0</div>
+                    <div class="label">Всего сессий</div>
+                </div>
+                <div class="status-item">
+                    <div class="value" id="authorizedSessions">0</div>
+                    <div class="label">Авторизовано</div>
+                </div>
+                <div class="status-item">
+                    <div class="value" id="activeSessions">0</div>
+                    <div class="label">Активных</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn-primary" onclick="loadSessions()">🔄 Обновить</button>
+                <button class="btn-success" onclick="startAutoRefresh()">▶️ Автообновление</button>
+                <button class="btn-danger" onclick="stopAutoRefresh()">⏹️ Остановить</button>
+            </div>
+            
+            <div id="sessionsContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Загрузка сессий...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let autoRefreshInterval = null;
+        
+        async function loadSessions() {
+            const container = document.getElementById('sessionsContainer');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Загрузка сессий...</p></div>';
+            
+            try {
+                const response = await fetch('/api/sessions');
+                const data = await response.json();
+                
+                if (data.sessions.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <h2>Сессии не найдены</h2>
+                            <p>Запустите Telegram Desktop для отображения сессий</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '<div class="sessions-list">';
+                data.sessions.forEach(session => {
+                    const statusClass = session.authorized ? 'authorized' : '';
+                    const statusBadge = session.authorized 
+                        ? '<span class="session-status status-authorized">✅ Авторизован</span>'
+                        : '<span class="session-status status-unauthorized">🔒 Требуется вход</span>';
+                    
+                    html += `
+                        <div class="session-card ${statusClass}">
+                            <div class="session-header">
+                                <div class="session-info">
+                                    <div class="session-title">${session.name} (PID: ${session.pid})</div>
+                                    <div class="session-details">
+                                        📞 ${session.phone} | 🕐 Запущен: ${session.started}
+                                    </div>
+                                </div>
+                                ${statusBadge}
+                            </div>
+                            <div class="session-actions">
+                                <button class="btn-primary" onclick="connectSession(${session.pid})">
+                                    🔌 Подключиться
+                                </button>
+                                <button class="btn-danger" onclick="disconnectSession(${session.pid})">
+                                    ❌ Отключить
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+                
+                // Обновляем статус
+                updateStatus();
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <h2>Ошибка загрузки</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function connectSession(pid) {
+            try {
+                const response = await fetch(`/api/connect/${pid}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('✅ Подключено успешно!', 'success');
+                    loadSessions();
+                } else {
+                    showNotification('❌ Ошибка: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ Ошибка подключения: ' + error.message, 'error');
+            }
+        }
+        
+        async function disconnectSession(pid) {
+            try {
+                const response = await fetch(`/api/disconnect/${pid}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('✅ Отключено', 'success');
+                    loadSessions();
+                } else {
+                    showNotification('❌ Ошибка: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ Ошибка отключения: ' + error.message, 'error');
+            }
+        }
+        
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                document.getElementById('totalSessions').textContent = data.total_sessions;
+                document.getElementById('authorizedSessions').textContent = data.authorized_sessions;
+                document.getElementById('activeSessions').textContent = data.active_sessions;
+            } catch (error) {
+                console.error('Ошибка обновления статуса:', error);
+            }
+        }
+        
+        function startAutoRefresh() {
+            if (autoRefreshInterval) return;
+            autoRefreshInterval = setInterval(() => {
+                loadSessions();
+            }, 5000); // Обновление каждые 5 секунд
+            showNotification('▶️ Автообновление включено', 'success');
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                showNotification('⏹️ Автообновление остановлено', 'success');
+            }
+        }
+        
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideIn 0.3s reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // Загружаем сессии при загрузке страницы
+        loadSessions();
+        updateStatus();
+        
+        // Автоматическое обновление статуса каждые 3 секунды
+        setInterval(updateStatus, 3000);
+    </script>
+</body>
+</html>
+
